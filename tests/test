@@ -1,0 +1,18 @@
+.IPPcode18
+			DEFVAR GF@counter
+MOVE GF@counter string@
+LABEL while
+JUMPIFEQ	end GF@counter string@aaa
+WRITE string@counter\032obsahuje\032
+WRITE GF@counter
+WRITE string@\010
+CONCAT GF@counter GF@counter string@příliš_žluťoučký_kůň_úpěl_ďábelské_ódy
+JUMP while
+LABEL end  
+
+break
+dprint GF@aa
+JUmpifneq whilie string@aa GF@aa 
+
+
+read GF@aa string 
