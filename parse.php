@@ -138,7 +138,7 @@ class Parse{
 		if(!isset($i[1])){
 			return false;
 		}
-		if(preg_match('/^(GF|LF|TF)@(-|_|\$|\*|%|&|\w)[\w\d]*$/', $i[0]."@".$i[1]))
+		if(preg_match('/^(GF|LF|TF)@(-|_|\$|\*|%|&|\w)[\w\d]*$/u', $i[0]."@".$i[1]))
 			return true;
 		return false;
 	}
@@ -146,29 +146,32 @@ class Parse{
 	public function is_const($i){
 		$string = $i[0]."@".(isset($i[1]) ? $i[1] : '');
 		if(!isset($i[1])){
-			if(preg_match('/^string@(\\0([0-2]\d|3[0-2])|(?!(\\|#))[[:print:]])*$/', $string))
+			if(preg_match('/^string@(\\\0([0-2]\d|3[0-2])|(?!(\\\|#))[[:print:]])*$/x', $string)){
 				return true;
+			}
 			else
 				return false;
 		}
-		if(preg_match('/^string@(\\0([0-2]\d|3[0-2]|35|92)|(?!(\\|#))[\x{21}-\x{FF}])*$/', $string))
+		if(preg_match('/^string@(\\\0([0-2]\d|3[0-2]|35|92)|(?!(\\\|#))[\x{21}-\x{FF}])*$/u', $string)){	
+			echo "string OK";
 			return true;
-		if(preg_match('/^bool@(true|false)$/', $i[0]."@".$i[1]))
+		}
+		if(preg_match('/^bool@(true|false)$/u', $i[0]."@".$i[1]))
 			return true;
-		if(preg_match('/^int@((-|\+)?[1-9]\d*|0)$/', $i[0]."@".$i[1])) 
+		if(preg_match('/^int@((-|\+)?[1-9]\d*|0)$/u', $i[0]."@".$i[1])) 
 			return true;
 		return false;
 	}
 
 	public function is_type($i){
-		if(preg_match('/^(int|bool|string)$/', $i)){
+		if(preg_match('/^(int|bool|string)$/u', $i)){
 			return true;
 		}
 		return false;
 	}
 
 	public function is_label($i){
-		if(preg_match('/^(-|_|\$|\*|%|&|\w)[\w\d]*$/', $i))
+		if(preg_match('/^(-|_|\$|\*|%|&|\w)[\w\d]*$/u', $i))
 			return true;
 		return false;
 	}
@@ -198,7 +201,9 @@ class Variables{
 }
 
 function get_help(){
-	echo "some help...\n";
+	echo "usage: parse.php [-h]\n
+optional arguments:
+  -h, --help\t\tshow this help message and exit\n";
 }
 
 /* MAIN */
