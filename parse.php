@@ -146,16 +146,17 @@ class Parse{
 	public function is_const($i){
 		$string = $i[0]."@".(isset($i[1]) ? $i[1] : '');
 		if(!isset($i[1])){
-			if(preg_match('/^string@(\\\0([0-2]\d|3[0-2])|(?!(\\\|#))[[:print:]])*$/x', $string)){
+			if(preg_match('/^string@(\\\0([0-2]\d|3[0-2])|(?!(\\\|#))[[:print:]])*$/u', $string)) {
 				return true;
 			}
 			else
 				return false;
 		}
-		if(preg_match('/^string@(\\\0([0-2]\d|3[0-2]|35|92)|(?!(\\\|#))[\x{21}-\x{FF}])*$/u', $string)){	
-			echo "string OK";
+		echo $string."\n";
+		if(preg_match('/^string@(\\\0([0-2]\d|3[0-2]|35|92)|(?!(\\\|#))[\x{0021}-\x{FFFF}])*$/u', $string)){	
 			return true;
 		}
+		echo $string."\n";
 		if(preg_match('/^bool@(true|false)$/u', $i[0]."@".$i[1]))
 			return true;
 		if(preg_match('/^int@((-|\+)?[1-9]\d*|0)$/u', $i[0]."@".$i[1])) 

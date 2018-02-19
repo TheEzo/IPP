@@ -24,6 +24,8 @@ function main(){
 		"int-script:"
 	);
 
+	$execute = `php5.6 ./parse.php < ./tests/good/test1.src`;
+	echo $execute;
 	$options = getopt($shortopts, $longopts);
 	if ($options === false){
 		exit(10);
