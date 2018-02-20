@@ -138,7 +138,7 @@ class Parse{
 		if(!isset($i[1])){
 			return false;
 		}
-		if(preg_match('/^(GF|LF|TF)@(-|_|\$|\*|%|&|\w)[\w\d]*$/u', $i[0]."@".$i[1]))
+		if(preg_match('/^(GF|LF|TF)@(-|_|\$|\*|%|&|\w)[\w\d-_\$\*%&]*$/u', $i[0]."@".$i[1]))
 			return true;
 		return false;
 	}
@@ -172,7 +172,7 @@ class Parse{
 	}
 
 	public function is_label($i){
-		if(preg_match('/^(-|_|\$|\*|%|&|\w)[\w\d]*$/u', $i))
+		if(preg_match('/^(-|_|\$|\*|%|&|\w)[\w\d-_\$\*%&]*$/u', $i))
 			return true;
 		return false;
 	}
