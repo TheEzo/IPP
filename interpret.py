@@ -18,14 +18,17 @@ class SomeClass:
         self.file = file
         self.inst_count = 0
         self.dict = self._parse_file()
-        print(self.dict)
-        self._run_code()
+        # self._run_code()
 
     def _parse_file(self):
         """
         convert check and convert file to dict
         """
-        tree = et.parse(self.file)
+        try:
+            tree = et.parse(self.file)
+        except:
+            # asi??
+            sys.exit(0)
         root = tree.getroot()
         instructions = []
         try:
@@ -63,8 +66,8 @@ class SomeClass:
 
     def _run_code(self):
         for i in range(self.inst_count):
+            pass
 
-        pass
 
 
 if __name__ == '__main__':

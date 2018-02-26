@@ -152,11 +152,9 @@ class Parse{
 			else
 				return false;
 		}
-		echo $string."\n";
 		if(preg_match('/^string@(\\\0([0-2]\d|3[0-2]|35|92)|(?!(\\\|#))[\x{0021}-\x{FFFF}])*$/u', $string)){	
 			return true;
 		}
-		echo $string."\n";
 		if(preg_match('/^bool@(true|false)$/u', $i[0]."@".$i[1]))
 			return true;
 		if(preg_match('/^int@((-|\+)?[1-9]\d*|0)$/u', $i[0]."@".$i[1])) 
