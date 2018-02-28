@@ -3,9 +3,12 @@ DEFVAR GF@counter
 MOVE GF@counter string@
 LABEL while
 JUMPIFEQ end GF@counter string@aaa
-#WRITE string@counter\032obsahuje\032
-#WRITE GF@counter
-#WRITE string@\010
+WRITE string@counter\032obsahuje\032
+WRITE GF@counter
+WRITE string@\010
 CONCAT GF@counter GF@counter string@a
 JUMP while
-LABEL end  
+LABEL end
+STRLEN GF@counter string@ahoj
+WRITE GF@counter
+add GF@counter int@1 int@1

@@ -79,12 +79,9 @@ class SomeClass:
 
     def _run_code(self):
         self._define_labels()
-        print(self.labels)
         jumps = ['JUMP', 'JUMPIFEQ', 'JUMPIFNEQ']
         i = 0
         while i < self.inst_count:
-            # for i in range(self.inst_count):
-            print(i)
             code = self.dict['instructions'][i]
             if code['opcode'] == 'LABEL':
                 self.labels.update({code['args'][0]['text']: int(code['order'])})
@@ -92,51 +89,172 @@ class SomeClass:
                 i = self.jump_instruction(i)
             else:
                 self.complete_instruction(i)
-                print(code['opcode'])
+                # print(code['opcode'])
             i += 1
 
-    def update(self, frame, varname, value):
+    def get(self, frame, varname):
         if frame == 'GF':
-            self.gf_vars.update({varname: ''})
+            return self.gf_vars[varname]
         elif frame == 'LF':
-            self.lf_vars.update({varname: ''})
+            return self.lf_vars[varname]
         elif frame == 'TF':
-            self.tf_vars.update({varname: ''})
+            return self.tf_vars[varname]
+
+    def update(self, frame, varname, value=''):
+        if frame == 'GF':
+            self.gf_vars.update({varname: value})
+        elif frame == 'LF':
+            self.lf_vars.update({varname: value})
+        elif frame == 'TF':
+            self.tf_vars.update({varname: value})
         else:
             pass
 
-    def complete_instruction(self, i):
+    def convert_string(self, s):
+        while True:
+            i = s.find('\\')
+            if i == -1:
+                return s
+            else:
+                n = int(s[i + 1:i + 4])
+                if s[i+5:]:
+                    s = s[:i] + chr(n) + s[i + 4:]
+                else:
+                    s = s[:i] + chr(n)
 
+    def math(self, arg1, arg2):
+        i1 = 0
+        i2 = 0
+        if arg1['type'] == 'var':
+            pass
+        else:
+            if not arg1['type'] == 'int':
+                sys.exit(53)
+            i1 = int(arg1['text'])
+        if arg2['type'] == 'var':
+            pass
+        else:
+            if not arg2['type'] == 'int':
+                sys.exit(53)
+            i2 = int(arg2['text'])
+        value = 0
+        return value
+
+    def complete_instruction(self, i):
         types = ['int', 'bool', 'string']
         code = self.dict['instructions'][i]
         try:
+            frame = ''
+            varname = ''
+            arg1 = {}
+            arg2 = {}
+            arg3 = {}
+            count = len(code['args'])
+            if count >= 1:
+                arg1 = code['args'][0]
+            if count >= 2:
+                arg2 = code['args'][1]
+            if count == 3:
+                arg3 = code['args'][2]
+            if code['args'][0]['type'] == 'var':
+                    frame = code['args'][0]['text'][:2]
+                    varname = code['args'][0]['text'][3:]
             opcode = code['opcode']
             if opcode == 'DEFVAR':
-                frame = code['args'][0]['text'][:2]
-                varname = code['args'][0]['text'][3:]
                 self.update(frame, varname, '')
 
             elif opcode == 'MOVE':
-                frame = code['args'][0]['text'][:2]
-                varname = code['args'][0]['text'][3:]
-
                 value = ''
 
                 if code['args'][1]['type'] == 'var':
                     pass
-                elif code['args'][1]['type'] in types:
-                    value = code['args'][1]['text']
-
+                # TODO
+                elif arg2['type'] in types:
+                    value = arg2['text']
+                    if arg2['type'] == 'string':
+                        i = value.find('\\')
+                        if not i == -1:
+                            value = self.convert_string(value)
                 self.update(frame, varname, value)
 
             elif opcode == 'CONCAT':
-                frame = code['args'][0]['text'][:2]
-                varname = code['args'][0]['text'][3:]
-
-
+                symb1 = arg2['text']
+                symb2 = arg3['text']
+                if arg2['type'] == 'var':
+                    symb1 = self.get(symb1[:2], symb1[3:])
+                elif not arg2['type'] == 'string':
+                    sys.exit(58)
+                if arg3['type'] == 'var':
+                    symb2 = self.get(symb2[:2], symb2[3:])
+                elif not arg3['type'] == 'string':
+                    sys.exit(58)
+                self.update(frame, varname, str(symb1) + str(symb2))
+            elif opcode == 'WRITE':
+                if not arg1['type'] == 'var':
+                    sys.stdout.write(str(self.convert_string(arg1['text'])))
+                else:
+                    v = arg1['text']
+                    sys.stdout.write(str(self.get(v[:2], v[3:])))
+            elif opcode == 'CREATEFRAME':
+                pass
+            elif opcode == 'PUSHFRAME':
+                pass
+            elif opcode == 'POPFRAME':
+                pass
+            elif opcode == 'CALL':
+                pass
+            elif opcode == 'RETURN':
+                pass
+            elif opcode == 'PUSHS':
+                pass
+            elif opcode == 'POPS':
+                pass
+            elif opcode == 'ADD':
+                self.update(frame, varname, self.math(arg2, arg3))
+            elif opcode == 'SUB':
+                pass
+            elif opcode == 'MUL':
+                pass
+            elif opcode == 'IDIV':
+                pass
+            elif opcode == 'LT':
+                pass
+            elif opcode == 'GT':
+                pass
+            elif opcode == 'EQ':
+                pass
+            elif opcode == 'AND':
+                pass
+            elif opcode == 'OR':
+                pass
+            elif opcode == 'NOT':
+                pass
+            elif opcode == 'INT2CHAR':
+                pass
+            elif opcode == 'STR2INT':
+                pass
+            elif opcode == 'READ':
+                pass
+            elif opcode == 'STRLEN':
+                if arg2['type'] == 'var':
+                    pass
+                else:
+                    self.update(frame, varname, len(arg2['text']))
+            elif opcode == 'GETCHAR':
+                pass
+            elif opcode == 'SETCHAR':
+                pass
+            elif opcode == 'TYPE':
+                pass
+            elif opcode == 'DPRINT':
+                pass
+            elif opcode == 'BREAK':
+                pass
 
         except KeyError:
             pass
+        except Exception as e:
+            print(e)
         pass
 
     def jump_instruction(self, i):
