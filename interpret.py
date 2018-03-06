@@ -24,7 +24,6 @@ class SomeClass:
         self.lf_vars = {}
         self.tf_vars = {}
 
-        print(self.dict)
         self._run_code()
 
 
@@ -100,13 +99,20 @@ class SomeClass:
         elif frame == 'TF':
             return self.tf_vars[varname]
 
-    def update(self, frame, varname, value=''):
+    def update(self, frame, varname, value):
+        if type(value) == str:
+            vartype = 'string'
+        elif type(value) == int:
+            vartype = 'int'
+        else:
+            vartype = 'bool'
+
         if frame == 'GF':
-            self.gf_vars.update({varname: value})
+            self.gf_vars.update({varname: {'val': value, 'type': vartype}})
         elif frame == 'LF':
-            self.lf_vars.update({varname: value})
+            self.lf_vars.update({varname: {'val': value, 'type': vartype}})
         elif frame == 'TF':
-            self.tf_vars.update({varname: value})
+            self.tf_vars.update({varname: {'val': value, 'type': vartype}})
         else:
             pass
 
@@ -122,23 +128,43 @@ class SomeClass:
                 else:
                     s = s[:i] + chr(n)
 
-    def math(self, arg1, arg2):
+    def math(self, arg1, arg2, op):
         i1 = 0
         i2 = 0
         if arg1['type'] == 'var':
-            pass
+            frame = arg1['text'][:2]
+            varname = arg1['text'][3:]
+            var = self.get(frame, varname)
+            if not var['type'] == 'int':
+                sys.exit(53)
+            i1 = var['val']
         else:
             if not arg1['type'] == 'int':
                 sys.exit(53)
             i1 = int(arg1['text'])
+
         if arg2['type'] == 'var':
-            pass
+            frame = arg2['text'][:2]
+            varname = arg2['text'][3:]
+            var = self.get(frame, varname)
+            if not var['type'] == 'int':
+                sys.exit(53)
+            i2 = var['val']
         else:
             if not arg2['type'] == 'int':
                 sys.exit(53)
             i2 = int(arg2['text'])
-        value = 0
-        return value
+
+        if op == 'ADD':
+            return i1 + i2
+        elif op == 'SUB':
+            return i1 - i2
+        elif op == 'MUL':
+            return i1 * i2
+        elif op == 'IDIV':
+            if i2 == 0:
+                sys.exit(57)
+            return int(i1 / i2)
 
     def complete_instruction(self, i):
         types = ['int', 'bool', 'string']
@@ -164,17 +190,22 @@ class SomeClass:
                 self.update(frame, varname, '')
 
             elif opcode == 'MOVE':
-                value = ''
-
-                if code['args'][1]['type'] == 'var':
-                    pass
-                # TODO
+                if arg2['type'] == 'var':
+                    value = self.get(arg2['text'][:2], arg2['text'][3:])
                 elif arg2['type'] in types:
-                    value = arg2['text']
-                    if arg2['type'] == 'string':
-                        i = value.find('\\')
-                        if not i == -1:
-                            value = self.convert_string(value)
+                    if arg2['type'] == 'int':
+                        value = int(arg2['text'])
+                    elif arg2['type'] == 'string':
+                        value = str(arg2['text'])
+                    else:
+                        value = True if arg2['text'] == 'true' else False
+                    # if arg2['type'] == 'string':
+                    #     i = value.find('\\')
+                    #     if not i == -1:
+                    #         value = self.convert_string(value)
+                else:
+                    # TODO kod?
+                    sys.exit(100)
                 self.update(frame, varname, value)
 
             elif opcode == 'CONCAT':
@@ -182,10 +213,16 @@ class SomeClass:
                 symb2 = arg3['text']
                 if arg2['type'] == 'var':
                     symb1 = self.get(symb1[:2], symb1[3:])
+                    if not symb1['type'] == 'string':
+                        sys.exit(58)
+                    symb1 = symb1['val']
                 elif not arg2['type'] == 'string':
                     sys.exit(58)
                 if arg3['type'] == 'var':
                     symb2 = self.get(symb2[:2], symb2[3:])
+                    if not symb2['type'] == 'string':
+                        sys.exit(58)
+                    symb2 = symb2['val']
                 elif not arg3['type'] == 'string':
                     sys.exit(58)
                 self.update(frame, varname, str(symb1) + str(symb2))
@@ -194,7 +231,7 @@ class SomeClass:
                     sys.stdout.write(str(self.convert_string(arg1['text'])))
                 else:
                     v = arg1['text']
-                    sys.stdout.write(str(self.get(v[:2], v[3:])))
+                    sys.stdout.write(str(self.get(v[:2], v[3:])['val']))
             elif opcode == 'CREATEFRAME':
                 pass
             elif opcode == 'PUSHFRAME':
@@ -210,13 +247,13 @@ class SomeClass:
             elif opcode == 'POPS':
                 pass
             elif opcode == 'ADD':
-                self.update(frame, varname, self.math(arg2, arg3))
+                self.update(frame, varname, self.math(arg2, arg3, 'ADD'))
             elif opcode == 'SUB':
-                pass
+                self.update(frame, varname, self.math(arg2, arg3, 'SUB'))
             elif opcode == 'MUL':
-                pass
+                self.update(frame, varname, self.math(arg2, arg3, 'MUL'))
             elif opcode == 'IDIV':
-                pass
+                self.update(frame, varname, self.math(arg2, arg3, 'IDIV'))
             elif opcode == 'LT':
                 pass
             elif opcode == 'GT':
@@ -237,7 +274,9 @@ class SomeClass:
                 pass
             elif opcode == 'STRLEN':
                 if arg2['type'] == 'var':
-                    pass
+                    f = arg2['text'][:2]
+                    n = arg2['text'][3:]
+                    self.update(frame, varname, len(self.get(f, n)['val']))
                 else:
                     self.update(frame, varname, len(arg2['text']))
             elif opcode == 'GETCHAR':
@@ -271,11 +310,11 @@ class SomeClass:
 
                 if arg1['type'] == 'var':
                     if arg1['text'][:2] == 'LF':
-                        t1 = self.lf_vars[arg1['text'][3:]]
+                        t1 = self.lf_vars[arg1['text'][3:]]['val']
                     elif arg1['text'][:2] == 'GF':
-                        t1 = self.gf_vars[arg1['text'][3:]]
+                        t1 = self.gf_vars[arg1['text'][3:]]['val']
                     elif arg1['text'][:2] == 'TF':
-                        t1 = self.tf_vars[arg1['text'][3:]]
+                        t1 = self.tf_vars[arg1['text'][3:]]['val']
                     else:
                         pass
                         #sys.exit()
@@ -283,11 +322,11 @@ class SomeClass:
                     t1 = arg1['text']
                 if arg2['type'] == 'var':
                     if arg2['text'][:2] == 'LF':
-                        t2 = self.lf_vars[arg2['text'][3:]]
+                        t2 = self.lf_vars[arg2['text'][3:]]['val']
                     elif arg2['text'][:2] == 'GF':
-                        t2 = self.gf_vars[arg2['text'][3:]]
+                        t2 = self.gf_vars[arg2['text'][3:]]['val']
                     elif arg2['text'][:2] == 'TF':
-                        t2 = self.tf_vars[arg2['text'][3:]]
+                        t2 = self.tf_vars[arg2['text'][3:]]['val']
                     else:
                         pass
                         #sys.exit()

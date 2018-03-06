@@ -11,4 +11,14 @@ JUMP while
 LABEL end
 STRLEN GF@counter string@ahoj
 WRITE GF@counter
-add GF@counter int@1 int@1
+write GF@cislo
+write string@\010
+
+defvar GF@cislo
+move GF@cislo int@10
+add GF@cislo GF@cislo int@1
+write GF@cislo
+write string@\010
+idiv GF@cislo int@10 int@2
+write GF@cislo
+write string@\010 
