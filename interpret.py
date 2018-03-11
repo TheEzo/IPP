@@ -48,7 +48,7 @@ class SomeClass:
                     elif arg_type == 'string':
                         if arg.text is None:
                             arg.text = ''
-                        regex = compile(r"^(\\0([0-2]\d|3[0-2]|35|92)|(?!(\\|#))[\x0000-\xFFFF])*$")
+                        regex = compile(r"^(\\0([0-2]\d|3[0-2]|35|92)|(?!(\\|#))[\u0000-\uFFFF])*$")
                     elif arg_type == 'int':
                         regex = compile(r"^((\-|\+)?[1-9]\d*|0)$")
                     elif arg_type == 'bool':
@@ -271,7 +271,16 @@ class SomeClass:
             elif opcode == 'STR2INT':
                 pass
             elif opcode == 'READ':
-                pass
+                text = input()
+                if arg2['text'] == 'string':
+                    self.update(frame, varname, str(text))
+                elif arg2['text'] == 'int':
+                    self.update(frame, varname, int(text))
+                else:
+                    if text == 'true':
+                        self.update(frame, varname, True)
+                    else:
+                        self.update(frame, varname, False)
             elif opcode == 'STRLEN':
                 if arg2['type'] == 'var':
                     f = arg2['text'][:2]

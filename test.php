@@ -1,11 +1,81 @@
 <?php
 
+class HTMLGenerator{
+	private $fails = 0;
+	private $success = 0;
+	private $body = "";
+
+	public function get_html(){
+		$skelet =  "
+<!DOCTYPE html>
+<html>
+<head>
+<title>IPP tests results</title>
+<style>
+.red {
+	color: red;
+}
+.green{
+	color: green;
+}
+.text-center{
+	text-align: center;
+}
+body{
+	margin: 0 auto;
+	width: 1000px;
+	align: center;
+}
+.w-20{
+	width: 20%;
+}
+.w-10{
+	width: 10%;
+}
+.w-70{
+	width: 70%;
+}
+</style>
+</head>
+<body>
+	<div>
+		<div class=\"\">
+			<h1>IPP tests results</h1>
+			<span>".($this->fails+$this->success)." tests total</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<span class=\"red\">".$this->fails." failed</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			<span class=\"green\">".$this->success." passed</span>
+		</div>
+		<table border=\"0\">
+		<tr>
+			<th class=\"w-20\">Test</th>
+			<th class=\"w-70\">Diff result<br>expected output <> real output</th>
+			<th class=\"w-10\">Return code<br>expected:got</th>
+		</tr>".$this->body."</table>
+	</div>
+</body>
+</html>\n";
+		echo $skelet;
+	}
+
+	public function add_test($test, $diff, $rc, $expected_rc, $passed){
+		$passed ? $this->success++ : $this->fails++;
+		$this->body = $this->body."
+<tr>
+	<td class=\"text-center ".($passed ? "green" : "red")."\">".$test."</td>
+	<td class=\"text-center\">".$diff."</td>
+	<td class=\"text-center\">".$expected_rc.":".$rc."</td>
+</tr>";
+	}
+
+}
+
 class TestCase{
 	private $dir;
 	private $recursive;
 	private $parser;
 	private $interpret;
 	private $test_files = array();
+	private $child = 0;
 
 	public function __construct($recursive, $dir, $parser, $interpret){
 		if(!is_dir($dir)){
@@ -79,20 +149,46 @@ class TestCase{
 	}
 
 	public function run_tests(){
+		$h = new HTMLGenerator();
 		foreach ($this->test_files as $file) {
 			if(!preg_match('/^.+\\.src$/', $file)){
 				continue;
 			}
 
-			exec("php5.6 ".$this->parser." < ".$file." > output.tmp && python3.6 ".$this->interpret." --source output.tmp > output2.tmp", $output, $rc);
-
 			$e = explode("/", $file);
 			$p = array_pop($e);
 			$name = explode('.', $p)[0];
 			$path = implode('/', $e).'/';
-			echo exec("diff output2.tmp ".$path.$name.".out")."\n";
+			echo "executing ".$file."\n";
+			exec("timeout 2 php5.6 ".$this->parser." < ".
+			$file." > ./output.tmp && python3.6 ".$this->interpret.
+			" --source output.tmp > ./output2.tmp", $output, $rc);
+
+			$f = fopen($path.$name.".in", "r");
+			while(($input = fgets($f, 4096)) !== false){
+				echo $input;
+			} 		
+			fclose($f);
+
+			// exec("timeout 2 php5.6 ".$this->parser." < ".
+			// 	$file." > output.tmp && python3.6 ".$this->interpret.
+			// 	" --source output.tmp > output2.tmp", $output, $rc);
+
+			
+			// echo "running ".$path.$name." rc=>".$rc."\n";
+			$out = exec("diff output2.tmp ".$path.$name.".out")."\n";
+			$passed = true;
+			if(strlen($out) > 1)
+				$passed = false;
+			$f = fopen($path.$name.".rc", "r");
+			$expected_rc = fread($f, filesize($path.$name.".rc"));
+			if((int)$expected_rc !== $rc)
+				$passed = false;			
+			fclose($f);
+			$h->add_test($path.$name, $out, $rc, $expected_rc, $passed);
 		}
 		exec('rm -f output2.tmp output.tmp');
+		$h->get_html();
 	}
 
 
@@ -159,7 +255,6 @@ function main($argv){
 
 	$t = new TestCase($recursive, $dir, $parse_script, $int_script);
 	$t->run_tests();
-
 
 } 
 
