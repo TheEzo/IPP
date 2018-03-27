@@ -1,0 +1,3 @@
+[submodule "tests/tests"]
+	path = tests/tests
+	url = git@github.com:EnkeyMC/IPP-VUT-BIT-2018-tests.git

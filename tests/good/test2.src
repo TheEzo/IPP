@@ -1,5 +1,0 @@
-.IPPcode18
-DEFVAR GF@aaa
-MOVE GF@aaa string@aaa
-label if
-#jump if

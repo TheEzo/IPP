@@ -1,0 +1,4 @@
+#infinite loop
+.IPPcode18
+label loooop
+jump  loooop

@@ -40,12 +40,15 @@ body{
 <body>
 	<div>
 		<div class=\"\">
-			<h1>IPP tests results</h1>
-			<span>".($this->fails+$this->success)." tests total</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-			<span class=\"red\">".$this->fails." failed</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-			<span class=\"green\">".$this->success." passed</span>
+			<center>
+				<h1>IPP tests results</h1>
+				<span>".($this->fails+$this->success)." tests total</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<span class=\"red\">".$this->fails." failed</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+				<span class=\"green\">".$this->success." passed</span>
+			</center>
+			<br><br><br>
 		</div>
-		<table border=\"0\">
+		<table border=\"1\">
 		<tr>
 			<th class=\"w-20\">Test</th>
 			<th class=\"w-70\">Diff result<br>expected output <> real output</th>
@@ -150,42 +153,39 @@ class TestCase{
 
 	public function run_tests(){
 		$h = new HTMLGenerator();
+		touch('./output2.tmp');
+		touch('./output.tmp');
 		foreach ($this->test_files as $file) {
 			if(!preg_match('/^.+\\.src$/', $file)){
 				continue;
 			}
-
+			$passed = true;
 			$e = explode("/", $file);
 			$p = array_pop($e);
 			$name = explode('.', $p)[0];
 			$path = implode('/', $e).'/';
-			echo "executing ".$file."\n";
-			exec("timeout 2 php5.6 ".$this->parser." < ".
-			$file." > ./output.tmp && python3.6 ".$this->interpret.
-			" --source output.tmp > ./output2.tmp", $output, $rc);
-
-			$f = fopen($path.$name.".in", "r");
-			while(($input = fgets($f, 4096)) !== false){
-				echo $input;
-			} 		
-			fclose($f);
-
-			// exec("timeout 2 php5.6 ".$this->parser." < ".
-			// 	$file." > output.tmp && python3.6 ".$this->interpret.
-			// 	" --source output.tmp > output2.tmp", $output, $rc);
-
-			
-			// echo "running ".$path.$name." rc=>".$rc."\n";
-			$out = exec("diff output2.tmp ".$path.$name.".out")."\n";
-			$passed = true;
-			if(strlen($out) > 1)
-				$passed = false;
-			$f = fopen($path.$name.".rc", "r");
-			$expected_rc = fread($f, filesize($path.$name.".rc"));
-			if((int)$expected_rc !== $rc)
-				$passed = false;			
-			fclose($f);
-			$h->add_test($path.$name, $out, $rc, $expected_rc, $passed);
+			exec("timeout 20 php5.6 ".$this->parser." < ".
+			$file." > ./output.tmp", $output, $rc);
+			if($rc === 0){
+				exec("cat ".$path.$name.".in | timeout 20 python3.6 ".$this->interpret.
+				" --source output.tmp > ./output2.tmp", $output, $rc);
+			}
+			if((int)$rc === 124){
+				$h->add_test($path.$name, "<span style=\"color: red;\">TEST TIMEOUTED!</span>", 0, 0, false);
+			}
+			else{
+				$out = exec("diff output2.tmp ".$path.$name.".out")."\n";
+				$passed = true;
+				if(strlen($out) > 1){
+					$passed = false;
+				}
+				$f = fopen($path.$name.".rc", "r");
+				$expected_rc = fread($f, filesize($path.$name.".rc"));
+				if((int)$expected_rc !== $rc)
+					$passed = false;			
+				fclose($f);
+				$h->add_test($path.$name, $out, $rc, $expected_rc, $passed);
+			}
 		}
 		exec('rm -f output2.tmp output.tmp');
 		$h->get_html();
@@ -202,7 +202,8 @@ optional arguments:
   -r, --recursive\t\tresursive tests search
   -d, --directory PATH\tdirectory which contains test files (*.src, *.in, *.out, *.rc), default - '.'
   -p, --parse-script PATH\tname of parse script placed in this directory, default - parse.php
-  -i, --int-script PATH\tname of interpreter script placed in this directory, default - interpret.py\n";
+  -i, --int-script PATH\tname of interpreter script placed in this directory, default - interpret.py\n\n
+  Each test have 20 sec timeout in interpret or in parser\n";
 }
 
 /* MAIN */
