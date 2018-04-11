@@ -1,0 +1,7 @@
+.IPPcode18
+WRITE string@counter\032obsahuje\032
+write bool@true
+write bool@false
+write int@-5
+#komentář
+chyba

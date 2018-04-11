@@ -1,0 +1,11 @@
+.IPPcode18
+defvar GF@a
+defvar GF@b
+move GF@a int@-10
+move GF@b int@-1
+label while
+sub GF@a GF@a GF@b
+jumpifeq end GF@a int@0
+jump while
+write string@error
+label end

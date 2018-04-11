@@ -1,0 +1,8 @@
+.IPPcode18
+CREATEFRAME
+defvar TF@abc
+move TF@abc string@a
+PUshframe
+write LF@abc
+write string@\010
+popframe

@@ -1,0 +1,4 @@
+.IPPcode18
+defvar GF@aa
+read GF@aa string
+write GF@aa

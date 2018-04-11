@@ -1,0 +1,23 @@
+.IPPcode18
+createframe
+defvar TF@var
+pushframe
+
+move LF@var int@1
+
+createframe
+defvar TF@vvar
+move TF@vvar int@1
+pushframe
+call foo
+popframe
+jump end
+
+label foo
+defvar GF@a
+move GF@a LF@vvar
+popframe
+add GF@a GF@a LF@var
+return
+
+label end

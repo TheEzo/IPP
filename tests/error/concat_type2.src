@@ -1,0 +1,5 @@
+.IPPcode18
+defvar GF@a
+defvar GF@b
+move GF@a string@abc
+concat GF@a int@5 GF@a 

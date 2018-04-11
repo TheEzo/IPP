@@ -1,0 +1,6 @@
+.IPPcode18
+defvar GF@aaa
+move GF@aaa string@aaa
+write GF@aaa
+move GF@aaa GF@aaa
+write GF@aaa

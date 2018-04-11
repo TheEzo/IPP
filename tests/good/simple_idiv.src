@@ -1,0 +1,9 @@
+.IPPcode18
+defvar GF@a
+defvar GF@b
+move GF@a int@10
+move GF@b int@-2
+idiv GF@a GF@a GF@b
+jumpifeq end GF@a int@-5
+write string@error
+label end

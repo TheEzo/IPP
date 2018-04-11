@@ -132,8 +132,6 @@ class TestCase{
 				}
 			}
 		}
-
-		// var_dump($this->test_files);
 	}
 
 	private function check($path, $name, $suffix){
@@ -153,9 +151,9 @@ class TestCase{
 
 	public function run_tests(){
 		$h = new HTMLGenerator();
-		touch('./output2.tmp');
-		touch('./output.tmp');
 		foreach ($this->test_files as $file) {
+			touch('/tmp/output2.tmp');
+			touch('/tmp/output.tmp');
 			if(!preg_match('/^.+\\.src$/', $file)){
 				continue;
 			}
@@ -165,16 +163,19 @@ class TestCase{
 			$name = explode('.', $p)[0];
 			$path = implode('/', $e).'/';
 			exec("timeout 20 php5.6 ".$this->parser." < ".
-			$file." > ./output.tmp", $output, $rc);
+			$file." > /tmp/output.tmp", $output, $rc);
 			if($rc === 0){
 				exec("cat ".$path.$name.".in | timeout 20 python3.6 ".$this->interpret.
-				" --source output.tmp > ./output2.tmp", $output, $rc);
+				" --source /tmp/output.tmp > /tmp/output2.tmp", $output, $rc);
 			}
 			if((int)$rc === 124){
 				$h->add_test($path.$name, "<span style=\"color: red;\">TEST TIMEOUTED!</span>", 0, 0, false);
 			}
 			else{
-				$out = exec("diff output2.tmp ".$path.$name.".out")."\n";
+				if($rc !== 21)
+					$out = exec("diff /tmp/output2.tmp ".$path.$name.".out")."\n";
+				else
+					$out = '';
 				$passed = true;
 				if(strlen($out) > 1){
 					$passed = false;
@@ -186,8 +187,8 @@ class TestCase{
 				fclose($f);
 				$h->add_test($path.$name, $out, $rc, $expected_rc, $passed);
 			}
+			exec('rm -f /tmp/output2.tmp /tmp/output.tmp');
 		}
-		exec('rm -f output2.tmp output.tmp');
 		$h->get_html();
 	}
 

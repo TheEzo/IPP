@@ -1,0 +1,15 @@
+.IPPcode18
+jump main
+# vytvori smycku, vypise par hodnot a ukonci se
+
+label foo
+write LF@var
+return
+
+label main
+createframe
+defvar TF@var
+move TF@var int@5
+pushframe
+call foo
+popframe
