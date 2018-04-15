@@ -93,7 +93,10 @@ class SomeClass:
                 i = self.jump_instruction(i)
             elif code['opcode'] == 'CALL':
                 self.stack.append(i+1)
-                i = self.labels[code['args'][0]['text']] - 1
+                try:
+                    i = self.labels[code['args'][0]['text']] - 1
+                except KeyError:
+                    sys.exit(52)
             elif code['opcode'] == 'RETURN':
                 try:
                     i = self.stack.pop() - 1
@@ -113,8 +116,12 @@ class SomeClass:
                 return self.tf_vars[varname]
         except KeyError:
             sys.exit(54)
+        except TypeError:
+            sys.exit(55)
 
     def update(self, frame, varname, value, define=False):
+        if type(value) is str:
+            value = self.convert_string(value)
         if not define:
             try:
                 self.get(frame, varname)
@@ -141,6 +148,8 @@ class SomeClass:
                 sys.exit(55)
             self.lf_vars[-1].update({varname: {'val': value, 'type': vartype}})
         else:
+            if self.tf_vars is None:
+                sys.exit(55)
             self.tf_vars.update({varname: {'val': value, 'type': vartype}})
 
     def convert_string(self, s):
@@ -272,9 +281,6 @@ class SomeClass:
                     value = str(arg2['text'])
                 else:
                     value = True if arg2['text'] == 'true' else False
-            else:
-                # TODO kod?
-                sys.exit()
             var = self.get(frame, varname)
             if var is None:
                 sys.exit(54)
@@ -307,13 +313,16 @@ class SomeClass:
                 if val == 'UNINITIALIZED':
                     sys.exit(56)
                 if type(val) is bool:
-                    print(str(val).lower())
+                    print(self.convert_string(str(val).lower()))
                 else:
-                    print(str(val))
+                    print(self.convert_string(str(val)))
         elif opcode == 'CREATEFRAME':
             self.tf_vars = {}
         elif opcode == 'PUSHFRAME':
+            if self.tf_vars is None:
+                sys.exit(55)
             self.lf_vars.append(self.tf_vars)
+            self.tf_vars = None
         elif opcode == 'POPFRAME':
             if not self.lf_vars:
                 sys.exit(55)
@@ -409,6 +418,7 @@ class SomeClass:
                 val = self.get_var(arg2)
                 if not val['type'] == 'int':
                     sys.exit(53)
+                val = val['val']
             else:
                 if not arg2['type'] == 'int':
                     sys.exit(53)
@@ -427,12 +437,13 @@ class SomeClass:
             else:
                 if not arg2['type'] == 'string':
                     sys.exit(53)
-                val1 = str(arg2['text'])
+                val1 = self.convert_string(str(arg2['text']))
 
             if arg3['type'] == 'var':
-                val2 = self.get_var(arg3)['val']
+                val2 = self.get_var(arg3)
                 if not val2['type'] == 'int':
                     sys.exit(53)
+                val2 = val2['val']
             else:
                 if not arg3['type'] == 'int':
                     sys.exit(53)
@@ -445,17 +456,24 @@ class SomeClass:
                 sys.exit(58)
             self.update(frame, varname, ord(val1[val2]))
         elif opcode == 'READ':
-            text = input()
-            if arg2['text'] == 'string':
-                self.update(frame, varname, str(text))
-            elif arg2['text'] == 'int':
-                try:
-                    self.update(frame, varname, int(text))
-                except ValueError:
-                    sys.exit(53)
-            else:
-                self.update(frame, varname, True if text.lower() == 'true' else False)
-
+            try:
+                text = input()
+                if arg2['text'] == 'string':
+                    self.update(frame, varname, str(text))
+                elif arg2['text'] == 'int':
+                    try:
+                        self.update(frame, varname, int(text))
+                    except ValueError:
+                        self.update(frame, varname, 0)
+                else:
+                    self.update(frame, varname, True if text.lower() == 'true' else False)
+            except EOFError:
+                if arg2['text'] == 'string':
+                    self.update(frame, varname, '')
+                elif arg2['text'] == 'int':
+                    self.update(frame, varname, 0)
+                else:
+                    self.update(frame, varname, False)
         elif opcode == 'STRLEN':
             if arg2['type'] == 'var':
                 f = arg2['text'][:2]
@@ -463,7 +481,7 @@ class SomeClass:
                 var = self.get(f, n)
                 if not var['type'] == 'string':
                     sys.exit(53)
-                self.update(frame, varname, len(var))
+                self.update(frame, varname, len(var['val']))
             else:
                 if not arg2['type'] == 'string':
                     sys.exit(53)
@@ -473,6 +491,7 @@ class SomeClass:
                 val1 = self.get_var(arg2)
                 if not val1['type'] == 'string':
                     sys.exit(53)
+                val1 = val1['val']
             else:
                 if not arg2['type'] == 'string':
                     sys.exit(53)
@@ -480,16 +499,16 @@ class SomeClass:
 
             if arg3['type'] == 'var':
                 val2 = self.get_var(arg3)
-                if not val2['type'] == 'string':
+                if not val2['type'] == 'int':
                     sys.exit(53)
+                val2 = val2['val']
             else:
                 if not arg3['type'] == 'int':
                     sys.exit(53)
                 val2 = int(arg3['text'])
-            # TODO index exception 58
-            if val2 < 0 or val2 + 1 > len(val1['val']):
+            if val2 < 0 or val2 + 1 > len(val1):
                 sys.exit(58)
-            self.update(frame, varname, str(val1['val'][val2]))
+            self.update(frame, varname, str(val1[val2]))
         elif opcode == 'SETCHAR':
             if arg2['type'] == 'var':
                 val1 = self.get_var(arg2)
@@ -508,6 +527,8 @@ class SomeClass:
             else:
                 if not arg3['type'] == 'string':
                     sys.exit(53)
+                if len(arg3['text']) == 0:
+                    sys.exit(58)
                 val2 = arg3['text'][0]
 
             var = self.get(frame, varname)['val']
@@ -537,9 +558,18 @@ class SomeClass:
             else:
                 self.update(frame, varname, arg2['type'])
         elif opcode == 'DPRINT':
-            pass
+            if arg1['type'] == 'var':
+                sys.stderr.write(str(self.get(frame, varname)['val'])+'\n')
+            else:
+                sys.stderr.write(str(arg1['text'])+'\n')
         elif opcode == 'BREAK':
-            pass
+            sys.stderr.write('Global frame: %s\n'
+                             'Local frame: %s\n'
+                             'Temporary frame: %s\n'
+                             'Pozice instrukce: %s\n' % (str(self.gf_vars),
+                                                       str(self.lf_vars),
+                                                       str(self.lf_vars),
+                                                       str(i)))
 
     def jump_instruction(self, i):
         code = self.dict['instructions'][i]

@@ -1,10 +1,12 @@
 <?php
 
+/* třída pro vytvoření html kódu */
 class HTMLGenerator{
 	private $fails = 0;
 	private $success = 0;
 	private $body = "";
 
+	/* vygeneruje html kostru */
 	public function get_html(){
 		$skelet =  "
 <!DOCTYPE html>
@@ -51,7 +53,7 @@ body{
 		<table border=\"1\">
 		<tr>
 			<th class=\"w-20\">Test</th>
-			<th class=\"w-70\">Diff result<br>expected output <> real output</th>
+			<th class=\"w-70\">Diff result<br>real output [difference sign] expected output</th>
 			<th class=\"w-10\">Return code<br>expected:got</th>
 		</tr>".$this->body."</table>
 	</div>
@@ -60,6 +62,7 @@ body{
 		echo $skelet;
 	}
 
+	/* inkrementuje patřičné čísla a přidá html kód s výsledkem testu */
 	public function add_test($test, $diff, $rc, $expected_rc, $passed){
 		$passed ? $this->success++ : $this->fails++;
 		$this->body = $this->body."
@@ -72,6 +75,7 @@ body{
 
 }
 
+/* třída pro nalezení a spuštění testů */
 class TestCase{
 	private $dir;
 	private $recursive;
@@ -95,6 +99,7 @@ class TestCase{
 		$this->get_files();
 	}
 
+	/* projde rekurzivně nebo nerekurzivně zadaný adresář a najde všechny testy */
 	private function get_files(){
 		if($this->recursive){
 			$files = new RecursiveDirectoryIterator($this->dir);
@@ -134,12 +139,14 @@ class TestCase{
 		}
 	}
 
+	/* kontroluje, jestli soubor path/name.suffix existuje */
 	private function check($path, $name, $suffix){
 		if(file_exists($path.$name.$suffix))
 			return true;
 		return false;
 	}
 
+	/* vytvoří soubor path/name.suffix */
 	private function create($path, $name, $suffix){
 		touch($path.$name.$suffix);
 		if(!strcmp('.rc', $suffix)){
@@ -149,6 +156,7 @@ class TestCase{
 		}
 	}
 
+	/* pro každý detekovaný zdrojový soubor spustí test a zavolá metodu pro generování html výsledku testu */ 
 	public function run_tests(){
 		$h = new HTMLGenerator();
 		foreach ($this->test_files as $file) {
@@ -165,7 +173,7 @@ class TestCase{
 			exec("timeout 20 php5.6 ".$this->parser." < ".
 			$file." > /tmp/output.tmp", $output, $rc);
 			if($rc === 0){
-				exec("cat ".$path.$name.".in | timeout 20 python3.6 ".$this->interpret.
+				exec('cat "'.$path.$name.'".in | timeout 20 python3.6 '.$this->interpret.
 				" --source /tmp/output.tmp > /tmp/output2.tmp", $output, $rc);
 			}
 			if((int)$rc === 124){
@@ -173,7 +181,7 @@ class TestCase{
 			}
 			else{
 				if($rc !== 21)
-					$out = exec("diff /tmp/output2.tmp ".$path.$name.".out")."\n";
+					$out = exec('diff /tmp/output2.tmp "'.$path.$name.'".out');
 				else
 					$out = '';
 				$passed = true;
@@ -185,10 +193,14 @@ class TestCase{
 				if((int)$expected_rc !== $rc)
 					$passed = false;			
 				fclose($f);
+				if($out !== ''){
+					exec('diff -y /tmp/output2.tmp "'.$path.$name.'".out', $out);
+					$out = implode("<br>", $out);
+				}
 				$h->add_test($path.$name, $out, $rc, $expected_rc, $passed);
 			}
-			exec('rm -f /tmp/output2.tmp /tmp/output.tmp');
 		}
+		exec('rm -f /tmp/output2.tmp /tmp/output.tmp');
 		$h->get_html();
 	}
 
@@ -208,6 +220,7 @@ optional arguments:
 }
 
 /* MAIN */
+/* zkontroluje argumenty a spustí testy */
 function main($argv){
 	$shortopts  = "";
 	$shortopts .= "h";
