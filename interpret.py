@@ -12,7 +12,7 @@ from xml.etree import ElementTree as et
 import argparse
 
 
-class SomeClass:
+class Interpreter:
 
     def __init__(self, file):
         self.file = file
@@ -30,7 +30,7 @@ class SomeClass:
 
     def _parse_file(self):
         """
-        convert check and convert file to dict
+        check and convert file to dict
         """
         try:
             tree = et.parse(self.file)
@@ -38,6 +38,8 @@ class SomeClass:
             # TODO asi??
             sys.exit(0)
         root = tree.getroot()
+        if not root.attrib['language'] == 'IPPcode18':
+            sys.exit(32)
         instructions = []
         try:
             for child in root:
@@ -73,6 +75,10 @@ class SomeClass:
         return {'root': {'tag': root.tag, 'attr': root.attrib}, 'instructions': instructions}
 
     def _define_labels(self):
+        """
+        first iteration
+        find all labels
+        """
         for i in self.dict['instructions']:
             if i['opcode'] == 'LABEL':
                 if i['args'][0]['text'] not in self.labels.keys():
@@ -81,6 +87,9 @@ class SomeClass:
                     sys.exit(52)
 
     def _run_code(self):
+        """
+        run each instruction
+        """
         self._define_labels()
         jumps = ['JUMP', 'JUMPIFEQ', 'JUMPIFNEQ']
         i = 0
@@ -88,7 +97,6 @@ class SomeClass:
             code = self.dict['instructions'][i]
             if code['opcode'] == 'LABEL':
                 pass
-                # self.labels.update({code['args'][0]['text']: int(code['order'])})
             elif code['opcode'] in jumps:
                 i = self.jump_instruction(i)
             elif code['opcode'] == 'CALL':
@@ -107,6 +115,9 @@ class SomeClass:
             i += 1
 
     def get(self, frame, varname):
+        """
+        get value from specified frame
+        """
         try:
             if frame == 'GF':
                 return self.gf_vars[varname]
@@ -120,6 +131,9 @@ class SomeClass:
             sys.exit(55)
 
     def update(self, frame, varname, value, define=False):
+        """
+        update/create variable on specified frame
+        """
         if type(value) is str:
             value = self.convert_string(value)
         if not define:
@@ -153,6 +167,9 @@ class SomeClass:
             self.tf_vars.update({varname: {'val': value, 'type': vartype}})
 
     def convert_string(self, s):
+        """
+        remove escape sequences from string and return result
+        """
         while True:
             i = s.find('\\')
             if i == -1:
@@ -165,6 +182,9 @@ class SomeClass:
                     s = s[:i] + chr(n)
 
     def math(self, arg1, arg2, op):
+        """
+        complete math instructions as +-*/ and return int value
+        """
         if arg1['type'] == 'var':
             frame = arg1['text'][:2]
             varname = arg1['text'][3:]
@@ -206,6 +226,9 @@ class SomeClass:
             return int(i1 / i2)
 
     def complete_instruction(self, i):
+        """
+        all instructions code except jumps and labels
+        """
         types = ['int', 'bool', 'string']
         code = self.dict['instructions'][i]
 
@@ -572,6 +595,9 @@ class SomeClass:
                                                        str(i)))
 
     def jump_instruction(self, i):
+        """
+        jump instructions work code
+        """
         code = self.dict['instructions'][i]
         try:
             if code['opcode'] == 'JUMP':
@@ -654,4 +680,4 @@ if __name__ == '__main__':
 
     path = os.path.abspath(args[0].source)
     with open(path, 'r') as f:
-        SomeClass(f)
+        Interpreter(f)
